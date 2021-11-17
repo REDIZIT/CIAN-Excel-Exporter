@@ -7,7 +7,7 @@ namespace InApp.DI
         public override void InstallBindings()
         {
             Container.Bind<Pathes>().AsSingle();
-            Container.Bind<Worker>().AsSingle();
+            Container.BindInterfacesAndSelfTo<Worker>().AsSingle();
         }
     }
 }

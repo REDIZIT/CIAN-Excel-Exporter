@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
@@ -25,9 +26,29 @@ namespace InApp
 
         private void Update()
         {
-            handledCountText.text = $"Обработано: -1/{worker.UrlsCount}";
+            handledCountText.text = $"Обработано: {worker.state.currentUrlIndex}/{worker.state.urlsCount}";
+            stateText.text = GetStateText();
+            estTimeText.text = "Осталось: " + GetEstTimeText();
+        }
 
-            //worker.state.CurrentIndex = 1;
+        private string GetStateText()
+        {
+            return worker.state.type switch
+            {
+                WorkerState.Type.Idle => "Не запущен",
+                WorkerState.Type.Downloading => "Скачивает",
+                WorkerState.Type.Awaiting => $"Ожидает ({Mathf.RoundToInt(worker.state.awaitTimeLeft)})",
+                WorkerState.Type.Error => "Ошибка",
+                WorkerState.Type.Done => "Готово",
+                _ => worker.state.type.ToString(),
+            };
+        }
+        private string GetEstTimeText()
+        {
+            int secondsLeft = (worker.state.urlsCount - worker.state.currentUrlIndex) * Worker.DELAY_SECONDS + worker.state.awaitTimeLeft;
+            TimeSpan ts = TimeSpan.FromSeconds(secondsLeft);
+
+            return string.Format("{0:%h}ч {0:%m}м {0:%s}с", ts);
         }
     }
 }
