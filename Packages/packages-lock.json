@@ -171,6 +171,12 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
+    "com.unity.uiextensions": {
+      "version": "file:UI extensions",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.visualscripting": {
       "version": "1.6.1",
       "depth": 0,
