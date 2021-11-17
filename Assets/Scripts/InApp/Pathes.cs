@@ -13,11 +13,16 @@ namespace InApp
         /// <summary>/</summary>
         public string ProgramFolder { get; }
 
+        /// <summary>txt file with logs</summary>
+        public string LogsFile { get; }
+
         public Pathes()
         {
             Data = GetParent(Application.dataPath) + "/data";
             ProgramFolder = GetParent(Data);
+
             SourceTable = Data + "/source_table.xlsx";
+            LogsFile = Application.persistentDataPath;
 
             Directory.CreateDirectory(Data);
         }

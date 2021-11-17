@@ -10,18 +10,19 @@ namespace InApp
     public class AppUI : MonoBehaviour
     {
         [SerializeField] private FilepathInputField folderField;
-        [SerializeField] private ProgressBar progressBar;
 
         [SerializeField] private Button startButton, stopButton, openButton;
+        [SerializeField] private GameObject buttonsGroup, errorGroup;
 
         private Worker worker;
+        private Pathes pathes;
 
         [Inject]
-        private void Construct(Worker worker)
+        private void Construct(Worker worker, Pathes pathes)
         {
             this.worker = worker;
+            this.pathes = pathes;
         }
-
         private void Update()
         {
             folderField.Interactable = worker.state.type == WorkerState.Type.Idle;
@@ -31,6 +32,9 @@ namespace InApp
             startButton.gameObject.SetActive(worker.state.type == WorkerState.Type.Idle);
             stopButton.gameObject.SetActive(worker.state.type == WorkerState.Type.Downloading || worker.state.type == WorkerState.Type.Awaiting);
             openButton.gameObject.SetActive(worker.state.type == WorkerState.Type.Done);
+
+            buttonsGroup.SetActive(worker.state.type != WorkerState.Type.Error);
+            errorGroup.SetActive(worker.state.type == WorkerState.Type.Error);
         }
 
         public void ClickStart()
@@ -44,6 +48,10 @@ namespace InApp
         public void ClickOpenExplorer()
         {
             Process.Start(folderField.Text);
+        }
+        public void ClickOpenLogs()
+        {
+            Process.Start(pathes.LogsFile);
         }
     }
 }
