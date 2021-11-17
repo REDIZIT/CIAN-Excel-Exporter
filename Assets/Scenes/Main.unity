@@ -658,7 +658,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 320, y: -50}
+  m_AnchoredPosition: {x: 407, y: -50}
   m_SizeDelta: {x: 160, y: 34}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &617972123
@@ -680,8 +680,8 @@ MonoBehaviour:
   _zoom: 1
   _effectGradient:
     serializedVersion: 2
-    key0: {r: 0.879, g: 0.6038348, b: 0, a: 1}
-    key1: {r: 0.74300003, g: 0.509902, b: 0, a: 1}
+    key0: {r: 1, g: 0.74398816, b: 0.18396229, a: 1}
+    key1: {r: 1, g: 0.6878307, b: 0, a: 1}
     key2: {r: 0, g: 0, b: 0, a: 0}
     key3: {r: 0, g: 0, b: 0, a: 0}
     key4: {r: 0, g: 0, b: 0, a: 0}
@@ -750,7 +750,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 617972125}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1490353527}
+        m_TargetAssemblyTypeName: InApp.AppUI, Assembly-CSharp
+        m_MethodName: ClickOpenExplorer
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &617972125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1073,7 +1085,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 788003259}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1490353527}
+        m_TargetAssemblyTypeName: InApp.AppUI, Assembly-CSharp
+        m_MethodName: ClickStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &788003259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1704,6 +1728,8 @@ MonoBehaviour:
   folderField: {fileID: 2077873460}
   progressBar: {fileID: 1932338218}
   startButton: {fileID: 1693709536}
+  stopButton: {fileID: 788003258}
+  openButton: {fileID: 617972124}
 --- !u!1 &1529609427
 GameObject:
   m_ObjectHideFlags: 0

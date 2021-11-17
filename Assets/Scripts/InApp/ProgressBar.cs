@@ -28,7 +28,7 @@ namespace InApp
         {
             handledCountText.text = $"Обработано: {worker.state.currentUrlIndex}/{worker.state.urlsCount}";
             stateText.text = GetStateText();
-            estTimeText.text = "Осталось: " + GetEstTimeText();
+            estTimeText.text = GetEstTimeText();
         }
 
         private string GetStateText()
@@ -45,10 +45,22 @@ namespace InApp
         }
         private string GetEstTimeText()
         {
-            int secondsLeft = (worker.state.urlsCount - worker.state.currentUrlIndex) * Worker.DELAY_SECONDS + worker.state.awaitTimeLeft;
+            int secondsLeft;
+            string prefix;
+            if (worker.state.type != WorkerState.Type.Done)
+            {
+                secondsLeft = (worker.state.urlsCount - worker.state.currentUrlIndex - 1) * Worker.DELAY_SECONDS + worker.state.awaitTimeLeft;
+                prefix = "Осталось: ";
+            }
+            else
+            {
+                secondsLeft = (int)(DateTime.Now - worker.state.startTime).TotalSeconds;
+                prefix = "Прошло времени: ";
+            }
+            
             TimeSpan ts = TimeSpan.FromSeconds(secondsLeft);
 
-            return string.Format("{0:%h}ч {0:%m}м {0:%s}с", ts);
+            return prefix + string.Format("{0:%h}ч {0:%m}м {0:%s}с", ts);
         }
     }
 }

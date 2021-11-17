@@ -44,6 +44,7 @@ namespace InApp
         public void Stop()
         {
             thread.Abort();
+            state = new WorkerState();
         }
 
         public void HandleUrls()
@@ -51,14 +52,15 @@ namespace InApp
             state = new WorkerState();
             state.type = WorkerState.Type.Downloading;
             state.urlsCount = urls.Count;
+            state.startTime = DateTime.Now;
 
             WebClient c = new WebClient();
 
-            for (int i = 0; i < urls.Count; i++)
+            for (int i = 1; i <= urls.Count; i++)
             {
                 state.currentUrlIndex = i;
 
-                string url = urls[i];
+                string url = urls[i - 1];
 
                 // Export url
                 // https://spb.cian.ru//?deal_type=sale&district%5B0%5D=747&engine_version=2&object_type%5B0%5D=1&offer_type=flat&room7=1&room9=1&totime=864000
@@ -77,6 +79,8 @@ namespace InApp
                     state.awaitTimeLeft--;
                 }
             }
+
+            state.type = WorkerState.Type.Done;
         }
 
         public void Dispose()
@@ -90,6 +94,7 @@ namespace InApp
         public Type type;
         public int currentUrlIndex, urlsCount;
         public int awaitTimeLeft;
+        public DateTime startTime;
 
         public enum Type
         {

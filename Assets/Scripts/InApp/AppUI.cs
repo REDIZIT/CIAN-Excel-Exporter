@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
@@ -11,7 +12,7 @@ namespace InApp
         [SerializeField] private FilepathInputField folderField;
         [SerializeField] private ProgressBar progressBar;
 
-        [SerializeField] private Button startButton;
+        [SerializeField] private Button startButton, stopButton, openButton;
 
         private Worker worker;
 
@@ -23,7 +24,13 @@ namespace InApp
 
         private void Update()
         {
+            folderField.Interactable = worker.state.type == WorkerState.Type.Idle;
+
             startButton.interactable = folderField.IsValid;
+
+            startButton.gameObject.SetActive(worker.state.type == WorkerState.Type.Idle);
+            stopButton.gameObject.SetActive(worker.state.type == WorkerState.Type.Downloading || worker.state.type == WorkerState.Type.Awaiting);
+            openButton.gameObject.SetActive(worker.state.type == WorkerState.Type.Done);
         }
 
         public void ClickStart()
@@ -32,11 +39,11 @@ namespace InApp
         }
         public void ClickStop()
         {
-
+            worker.Stop();
         }
         public void ClickOpenExplorer()
         {
-            
+            Process.Start(folderField.Text);
         }
     }
 }
