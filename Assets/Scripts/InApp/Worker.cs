@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using UnityEngine;
 
@@ -9,20 +10,19 @@ namespace InApp
 {
     public class Worker : IDisposable
     {
-        public int UrlsCount => urls.Count;
-
         public WorkerState state = new WorkerState();
 
         private List<string> urls = new List<string>();
 
         private Thread thread;
         private string folderPath;
+        private HttpClient client;
 
         private readonly Pathes pathes;
         private readonly UrlsCreator urlsCreator;
 
         /// <summary>Delay between requests (in seconds)</summary>
-        public const int DELAY_SECONDS = 10;
+        public const int DELAY_SECONDS = 5;
 
         public Worker(Pathes pathes)
         {
@@ -34,9 +34,20 @@ namespace InApp
         {
             this.folderPath = folderPath;
             if (Directory.Exists(folderPath) == false)
-                throw new System.Exception($"Can't start working because there is no folder at: '{folderPath}'");
+                throw new Exception($"Can't start working because there is no folder at: '{folderPath}'");
 
             urls = urlsCreator.Create();
+            
+            var handler = new HttpClientHandler();
+            if (File.Exists(pathes.Data + "/noproxy.txt") == false)
+            {
+                handler.Proxy = new WebProxy
+                {
+                    Address = new Uri("http://proxy.ko.wan:808"),
+                    BypassProxyOnLocal = false
+                };
+            }
+            client = new HttpClient(handler);
 
             thread = new Thread(new ThreadStart(HandleUrls));
             thread.Start();
@@ -56,8 +67,6 @@ namespace InApp
                 state.urlsCount = urls.Count;
                 state.startTime = DateTime.Now;
 
-                WebClient c = new WebClient();
-
                 for (int i = 1; i <= urls.Count; i++)
                 {
                     state.currentUrlIndex = i;
@@ -71,7 +80,19 @@ namespace InApp
                     state.type = WorkerState.Type.Downloading;
                     state.awaitTimeLeft = DELAY_SECONDS;
 
-                    c.DownloadFile(url, folderPath + "/" + i + ".xlsx");
+                    //client.diwn(url, folderPath + "/" + i + ".xlsx");
+                    using (HttpResponseMessage resp = client.GetAsync(url).Result)
+                    {
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            File.WriteAllBytes(folderPath + "/" + i + ".xlsx", resp.Content.ReadAsByteArrayAsync().Result);
+                        }
+                        else
+                        {
+                            throw new Exception($"Webpage ({url}) can't be downloaded. Response code is {resp.StatusCode}");
+                        }
+                    }
+
 
                     state.type = WorkerState.Type.Awaiting;
 
@@ -84,8 +105,13 @@ namespace InApp
 
                 state.type = WorkerState.Type.Done;
             }
-            catch
+            catch (Exception err)
             {
+                if (err is ThreadAbortException)
+                {
+                    state.type = WorkerState.Type.Idle;
+                    return;
+                }
                 state.type = WorkerState.Type.Error;
                 throw;
             }
