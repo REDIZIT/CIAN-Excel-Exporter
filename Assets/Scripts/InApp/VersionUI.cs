@@ -7,7 +7,7 @@ namespace InApp
     {
         [SerializeField] private Text versionText;
 
-        private const string REPO_URL = "https://github.com/REDIZIT/CIAN-Excel-Exporter/releases/tag/release";
+        private const string REPO_URL = "https://github.com/REDIZIT/CIAN-Excel-Exporter/releases";
 
         private void Start()
         {
