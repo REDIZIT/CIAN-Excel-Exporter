@@ -10,6 +10,7 @@ namespace InApp
     public class AppUI : MonoBehaviour
     {
         [SerializeField] private FilepathInputField folderField;
+        [SerializeField] private Slider progressBar;
 
         [SerializeField] private Button startButton, stopButton, openButton;
         [SerializeField] private GameObject buttonsGroup, errorGroup;
@@ -35,6 +36,8 @@ namespace InApp
 
             buttonsGroup.SetActive(worker.state.type != WorkerState.Type.Error);
             errorGroup.SetActive(worker.state.type == WorkerState.Type.Error);
+
+            UpdateProgressBar();
         }
 
         public void ClickStart()
@@ -52,6 +55,12 @@ namespace InApp
         public void ClickOpenLogs()
         {
             Process.Start(pathes.LogsFile);
+        }
+
+        private void UpdateProgressBar()
+        {
+            progressBar.value = worker.state.currentUrlIndex;
+            progressBar.maxValue = worker.state.urlsCount;
         }
     }
 }

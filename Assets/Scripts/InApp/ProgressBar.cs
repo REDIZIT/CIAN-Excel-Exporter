@@ -49,12 +49,14 @@ namespace InApp
             string prefix;
             if (worker.state.type != WorkerState.Type.Done)
             {
-                secondsLeft = (worker.state.urlsCount - worker.state.currentUrlIndex - 1) * Worker.DELAY_SECONDS + worker.state.awaitTimeLeft;
+                int urlsLeft = worker.state.urlsCount - worker.state.currentUrlIndex - 1;
+                secondsLeft = urlsLeft * Worker.DELAY_SECONDS + worker.state.awaitTimeLeft;
+                secondsLeft += worker.state.currentUrlIndex / Worker.CHILL_URLS_COUNT * Worker.DELAY_SECONDS;
                 prefix = "Осталось: ";
             }
             else
             {
-                secondsLeft = (int)(DateTime.Now - worker.state.startTime).TotalSeconds;
+                secondsLeft = (int)(worker.state.finishTime - worker.state.startTime).TotalSeconds;
                 prefix = "Прошло времени: ";
             }
             

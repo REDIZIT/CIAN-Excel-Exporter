@@ -1,8 +1,16 @@
+using HtmlAgilityPack;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Edge;
+using OpenQA.Selenium.Opera;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
@@ -23,6 +31,10 @@ namespace InApp
 
         /// <summary>Delay between requests (in seconds)</summary>
         public const int DELAY_SECONDS = 5;
+        /// <summary>Count of urls to check before have a chill</summary>
+        public const int CHILL_URLS_COUNT = 100;
+        /// <summary>Chill time in seconds</summary>
+        public const int CHILL_DELAY = 60;
 
         public Worker(Pathes pathes)
         {
@@ -60,47 +72,62 @@ namespace InApp
 
         public void HandleUrls()
         {
+            ChromeDriver driver = null;
             try
             {
-                state = new WorkerState();
-                state.type = WorkerState.Type.Downloading;
-                state.urlsCount = urls.Count;
-                state.startTime = DateTime.Now;
+                state = new WorkerState
+                {
+                    type = WorkerState.Type.Downloading,
+                    urlsCount = urls.Count,
+                    startTime = DateTime.Now
+                };
+
+                driver = GetDriver();
+                System.Random rnd = new System.Random();
 
                 for (int i = 1; i <= urls.Count; i++)
                 {
-                    state.currentUrlIndex = i;
+                    state.currentUrlIndex = i - 1;
 
                     string url = urls[i - 1];
 
                     // Export url
-                    // https://spb.cian.ru//?deal_type=sale&district%5B0%5D=747&engine_version=2&object_type%5B0%5D=1&offer_type=flat&room7=1&room9=1&totime=864000
-                    url = url.Replace("cat.php", "export/xls/offers");
+                    // https://spb.cian.ru/export/xls/offers/?deal_type=sale&district%5B0%5D=747&engine_version=2&object_type%5B0%5D=1&offer_type=flat&room7=1&room9=1&totime=864000
+                    //url = url.Replace("cat.php", "export/xls/offers");
+
+                    if (i % CHILL_URLS_COUNT == 0 && i > 0)
+                    {
+                        state.type = WorkerState.Type.Awaiting;
+                        state.awaitTimeLeft = CHILL_DELAY;
+                        while (state.awaitTimeLeft > 0)
+                        {
+                            Thread.Sleep(1000);
+                            state.awaitTimeLeft--;
+                        }
+                    }
 
                     state.type = WorkerState.Type.Downloading;
+
                     state.awaitTimeLeft = DELAY_SECONDS;
 
-                    //client.diwn(url, folderPath + "/" + i + ".xlsx");
-                    using (HttpResponseMessage resp = client.GetAsync(url).Result)
+                    driver.Navigate().GoToUrl(url);
+
+                    HtmlDocument doc = new HtmlDocument();
+                    doc.LoadHtml(driver.PageSource);
+
+                    var elemets = driver.FindElementsByClassName("_93444fe79c--light--366j7");
+                    IWebElement button = null;
+
+                    while (button == null)
                     {
-                        if (resp.IsSuccessStatusCode)
+                        button = elemets.FirstOrDefault(e => e.Text == "Сохранить файл в Excel");
+                        if (button == null)
                         {
-                            File.WriteAllBytes(folderPath + "/" + i + ".xlsx", resp.Content.ReadAsByteArrayAsync().Result);
-                        }
-                        else
-                        {
-                            throw new Exception($"Webpage ({url}) can't be downloaded. Response code is {resp.StatusCode}");
+                            Thread.Sleep(1000);
                         }
                     }
 
-
-                    state.type = WorkerState.Type.Awaiting;
-
-                    while (state.awaitTimeLeft > 0)
-                    {
-                        Thread.Sleep(1000);
-                        state.awaitTimeLeft--;
-                    }
+                    button.Click();
                 }
 
                 state.type = WorkerState.Type.Done;
@@ -115,12 +142,79 @@ namespace InApp
                 state.type = WorkerState.Type.Error;
                 throw;
             }
-            
+            finally
+            {
+                state.finishTime = DateTime.Now;
+                if (driver != null)
+                {
+                    driver.Close();
+                }
+            }
         }
 
         public void Dispose()
         {
             thread?.Abort();
+        }
+
+        private byte[] Download(string url)
+        {
+            using HttpResponseMessage resp = client.GetAsync(url).Result;
+            if (resp.IsSuccessStatusCode)
+            {
+                return resp.Content.ReadAsByteArrayAsync().Result;
+            }
+            else
+            {
+                throw new Exception($"Webpage ({url}) can't be downloaded. Response code is {resp.StatusCode}");
+            }
+        }
+
+        private ChromeDriver GetDriver()
+        {
+            ChromeDriverService service = ChromeDriverService.CreateDefaultService(pathes.DataPath + "/StreamingAssets");
+            service.HideCommandPromptWindow = true;
+            service.EnableVerboseLogging = true;
+
+            var chromeOptions = new ChromeOptions();
+
+            chromeOptions.AddArgument("--disable-blink-features=AutomationControlled");
+            //chromeOptions.AddArgument("--headless");
+
+            chromeOptions.AddUserProfilePreference("download.default_directory", folderPath);
+            chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
+            chromeOptions.AddUserProfilePreference("download.directory_upgrade", true);
+            //chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.automatic_downloads", 1);
+            chromeOptions.AddUserProfilePreference("intl.accept_languages", "ru");
+            chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+
+            var driver = new ChromeDriver(service, chromeOptions);
+
+            driver.Manage().Window.Maximize();
+
+            driver.ExecuteScript(@"
+Object.defineProperty(navigator, 'languages', {
+        get: function() {
+                return ['en-US', 'en', 'es'];
+            }
+        });
+
+    // Overwrite the `plugins` property to use a custom getter.
+    Object.defineProperty(navigator, 'plugins', {
+        get: () => [1, 2, 3, 4, 5],
+    });
+
+    // Pass the Webdriver test
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => false,
+    });
+");
+            string startUrl = "https://spb.cian.ru";
+            driver.Navigate().GoToUrl(startUrl);
+
+            Thread.Sleep(5000);
+
+            return driver;
         }
     }
 
@@ -129,7 +223,7 @@ namespace InApp
         public Type type;
         public int currentUrlIndex, urlsCount;
         public int awaitTimeLeft;
-        public DateTime startTime;
+        public DateTime startTime, finishTime;
 
         public enum Type
         {
