@@ -22,7 +22,7 @@ namespace InApp
 
         private List<string> urls = new List<string>();
 
-        private Thread thread;
+        private Thread thread, watcherThread;
         private string folderPath;
         private HttpClient client;
 
@@ -63,11 +63,21 @@ namespace InApp
 
             thread = new Thread(new ThreadStart(HandleUrls));
             thread.Start();
+
+            UnityEngine.Debug.Log(pathes.TempDownload);
         }
         public void Stop()
         {
             thread.Abort();
             state = new WorkerState();
+        }
+
+        private void MoveDownloadedFile()
+        {
+            string targetFileName = folderPath + "/" + Directory.GetFiles(folderPath).Length + ".xlsx";
+            string sourceFileName = Directory.GetFiles(pathes.TempDownload)[0];
+
+            File.Move(sourceFileName, targetFileName);
         }
 
         public void HandleUrls()
@@ -128,6 +138,12 @@ namespace InApp
                     }
 
                     button.Click();
+
+                    while(Directory.GetFiles(pathes.TempDownload).Length == 0)
+                    {
+                        Thread.Sleep(50);
+                    }
+                    MoveDownloadedFile();
                 }
 
                 state.type = WorkerState.Type.Done;
@@ -155,6 +171,7 @@ namespace InApp
         public void Dispose()
         {
             thread?.Abort();
+            watcherThread?.Abort();
         }
 
         private byte[] Download(string url)
@@ -179,12 +196,12 @@ namespace InApp
             var chromeOptions = new ChromeOptions();
 
             chromeOptions.AddArgument("--disable-blink-features=AutomationControlled");
-            //chromeOptions.AddArgument("--headless");
+            chromeOptions.AddArgument("--headless");
 
-            chromeOptions.AddUserProfilePreference("download.default_directory", folderPath);
+            chromeOptions.AddUserProfilePreference("download.default_directory", pathes.TempDownload);
             chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
             chromeOptions.AddUserProfilePreference("download.directory_upgrade", true);
-            //chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.automatic_downloads", 1);
+            chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.automatic_downloads", 1);
             chromeOptions.AddUserProfilePreference("intl.accept_languages", "ru");
             chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
 
@@ -212,7 +229,7 @@ Object.defineProperty(navigator, 'languages', {
             string startUrl = "https://spb.cian.ru";
             driver.Navigate().GoToUrl(startUrl);
 
-            Thread.Sleep(5000);
+            //Thread.Sleep(5000);
 
             return driver;
         }

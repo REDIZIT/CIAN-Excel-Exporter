@@ -19,6 +19,9 @@ namespace InApp
         /// <summary>Application.dataPath</summary>
         public string DataPath { get; }
 
+        /// <summary>Application.temporaryCachePath/download</summary>
+        public string TempDownload { get; }
+
         public Pathes()
         {
             DataPath = Application.dataPath;
@@ -29,6 +32,9 @@ namespace InApp
             SourceTable = Data + "/source_table.xlsx";
             LogsFile = Application.persistentDataPath;
 
+            TempDownload = (Application.temporaryCachePath + "/download").Replace("/", @"\");
+
+            Directory.CreateDirectory(TempDownload);
             Directory.CreateDirectory(Data);
         }
 
