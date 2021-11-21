@@ -37,7 +37,7 @@ namespace InApp
             ExcelTable districtTable = table.Tables[0];
 
             districts = new List<string>();
-            for (int i = 1; i <= districtTable.NumberOfRows; i++)
+            for (int i = 1; i <= /*districtTable.NumberOfRows*/1; i++)
             {
                 var cell = districtTable.GetCell(i + 1, 1);
                 if (cell == null) continue;

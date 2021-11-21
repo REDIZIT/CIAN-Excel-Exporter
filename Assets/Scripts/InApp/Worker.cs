@@ -1,16 +1,13 @@
 using HtmlAgilityPack;
+//using OpenQA.Selenium.Edge;
+using Microsoft.Edge.SeleniumTools;
 using OpenQA.Selenium;
-using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Edge;
-using OpenQA.Selenium.Opera;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
@@ -25,6 +22,7 @@ namespace InApp
         private Thread thread, watcherThread;
         private string folderPath;
         private HttpClient client;
+        private FileSystemWatcher watcher;
 
         private readonly Pathes pathes;
         private readonly UrlsCreator urlsCreator;
@@ -49,7 +47,7 @@ namespace InApp
                 throw new Exception($"Can't start working because there is no folder at: '{folderPath}'");
 
             urls = urlsCreator.Create();
-            
+
             var handler = new HttpClientHandler();
             if (File.Exists(pathes.Data + "/noproxy.txt") == false)
             {
@@ -65,24 +63,50 @@ namespace InApp
             thread.Start();
 
             UnityEngine.Debug.Log(pathes.TempDownload);
+
+            watcherThread = new Thread(new ThreadStart(WatchDownloads));
+            watcherThread.Start();
         }
         public void Stop()
         {
             thread.Abort();
             state = new WorkerState();
         }
+        private void WatchDownloads()
+        {
+            while (true)
+            {
+                while (Directory.GetFiles(pathes.TempDownload, "*.xlsx").Length == 0)
+                {
+                    Thread.Sleep(50);
+                }
 
-        private void MoveDownloadedFile()
+                Thread.Sleep(500);
+
+                string targetFileName = folderPath + "/" + Directory.GetFiles(folderPath).Length + ".xlsx";
+                string sourceFileName = Directory.GetFiles(pathes.TempDownload)[0];
+
+                //Debug.Log("File moved");
+
+                File.Move(sourceFileName, targetFileName);
+
+                while (Directory.GetFiles(pathes.TempDownload, "*.xlsx").Length != 0)
+                {
+                    Thread.Sleep(50);
+                }
+            }
+        }
+        private void MoveDownloadedFile(object sender, FileSystemEventArgs a)
         {
             string targetFileName = folderPath + "/" + Directory.GetFiles(folderPath).Length + ".xlsx";
-            string sourceFileName = Directory.GetFiles(pathes.TempDownload)[0];
+            string sourceFileName = a.FullPath;
 
             File.Move(sourceFileName, targetFileName);
         }
 
         public void HandleUrls()
         {
-            ChromeDriver driver = null;
+            IWebDriver driver = null;
             try
             {
                 state = new WorkerState
@@ -97,7 +121,7 @@ namespace InApp
 
                 for (int i = 1; i <= urls.Count; i++)
                 {
-                    state.currentUrlIndex = i - 1;
+                    state.currentUrlIndex = i;
 
                     string url = urls[i - 1];
 
@@ -125,7 +149,7 @@ namespace InApp
                     HtmlDocument doc = new HtmlDocument();
                     doc.LoadHtml(driver.PageSource);
 
-                    var elemets = driver.FindElementsByClassName("_93444fe79c--light--366j7");
+                    var elemets = driver.FindElements(By.ClassName("_93444fe79c--light--366j7"));
                     IWebElement button = null;
 
                     while (button == null)
@@ -137,15 +161,11 @@ namespace InApp
                         }
                     }
 
+                    //Debug.Log("Click download");
                     button.Click();
-
-                    while(Directory.GetFiles(pathes.TempDownload).Length == 0)
-                    {
-                        Thread.Sleep(50);
-                    }
-                    MoveDownloadedFile();
                 }
 
+                Thread.Sleep(4000);
                 state.type = WorkerState.Type.Done;
             }
             catch (Exception err)
@@ -187,25 +207,27 @@ namespace InApp
             }
         }
 
-        private ChromeDriver GetDriver()
+        private IWebDriver GetDriver()
         {
-            ChromeDriverService service = ChromeDriverService.CreateDefaultService(pathes.DataPath + "/StreamingAssets");
+            EdgeDriverService service = EdgeDriverService.CreateChromiumService(pathes.DataPath + "/StreamingAssets");
             service.HideCommandPromptWindow = true;
-            service.EnableVerboseLogging = true;
 
-            var chromeOptions = new ChromeOptions();
+            var options = new EdgeOptions();
 
-            chromeOptions.AddArgument("--disable-blink-features=AutomationControlled");
-            chromeOptions.AddArgument("--headless");
+            options.UseChromium = true;
+            options.AddArgument("--disable-blink-features=AutomationControlled");
+            options.AddArgument("--headless");
 
-            chromeOptions.AddUserProfilePreference("download.default_directory", pathes.TempDownload);
-            chromeOptions.AddUserProfilePreference("download.prompt_for_download", false);
-            chromeOptions.AddUserProfilePreference("download.directory_upgrade", true);
-            chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.automatic_downloads", 1);
-            chromeOptions.AddUserProfilePreference("intl.accept_languages", "ru");
-            chromeOptions.AddUserProfilePreference("disable-popup-blocking", "true");
+            options.AddUserProfilePreference("download.default_directory", pathes.TempDownload);
+            options.AddUserProfilePreference("download.prompt_for_download", false);
+            options.AddUserProfilePreference("download.directory_upgrade", true);
+            options.AddUserProfilePreference("profile.default_content_setting_values.automatic_downloads", 1);
+            options.AddUserProfilePreference("intl.accept_languages", "ru");
+            options.AddUserProfilePreference("disable-popup-blocking", "true");
 
-            var driver = new ChromeDriver(service, chromeOptions);
+
+
+            var driver = new EdgeDriver(service, options);
 
             driver.Manage().Window.Maximize();
 
