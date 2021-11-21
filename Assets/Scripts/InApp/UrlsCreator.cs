@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace InApp
 {
@@ -37,7 +38,7 @@ namespace InApp
             ExcelTable districtTable = table.Tables[0];
 
             districts = new List<string>();
-            for (int i = 1; i <= /*districtTable.NumberOfRows*/1; i++)
+            for (int i = 1; i <= districtTable.NumberOfRows; i++)
             {
                 var cell = districtTable.GetCell(i + 1, 1);
                 if (cell == null) continue;
@@ -56,32 +57,35 @@ namespace InApp
             for (int i = 8; i <= rulesTable.NumberOfRows; i++)
             {
                 // Update room index
-                var roomCell = rulesTable.GetCell(i + 1, 1);
-                if (roomCell != null && roomCell.Value.Contains("https") == false)
+                var roomCell = rulesTable.GetCell(i, 1);
+                if (roomCell != null && string.IsNullOrWhiteSpace(roomCell.Value) == false && roomCell.Value.Contains("https") == false)
                 {
                     currentRoom++;
                 }
 
                 // Check district
-                var districtCell = rulesTable.GetCell(i + 1, 2);
+                var districtCell = rulesTable.GetCell(i, 2);
                 if (districtCell == null) continue;
 
                 string district = districtCell.Value;
                 Rule rule = GetOrCreateRule(district);
 
+
                 // Add ranges
                 for (int x = 0; x < 5; x++)
                 {
-                    var conditionCell = rulesTable.GetCell(i + 1, 4 + x);
+                    var conditionCell = rulesTable.GetCell(i, 4 + x);
                     if (conditionCell == null || string.IsNullOrWhiteSpace(conditionCell.Value)) continue;
 
-                    rule.AddRange(currentRoom, new Range(conditionCell.Value));
+                    rule.AddRange(currentRoom - 1, new Range(conditionCell.Value));
                 }
             }
         }
         private List<string> CreateUrls()
         {
             List<string> urls = new List<string>();
+
+            
 
             foreach (string district in districts)
             {
@@ -95,6 +99,10 @@ namespace InApp
                             {
                                 urls.Add(CreateUrl(district, r, range));
                             }
+                        }
+                        else
+                        {
+                            urls.Add(CreateUrl(district, r, null));
                         }
                     }
                 }
