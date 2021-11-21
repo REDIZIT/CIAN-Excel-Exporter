@@ -23,6 +23,7 @@ namespace InApp
         private string folderPath;
         private HttpClient client;
         private FileSystemWatcher watcher;
+        private IWebDriver driver;
 
         private readonly Pathes pathes;
         private readonly UrlsCreator urlsCreator;
@@ -83,7 +84,7 @@ namespace InApp
 
                 Thread.Sleep(500);
 
-                string targetFileName = folderPath + "/" + Directory.GetFiles(folderPath).Length + ".xlsx";
+                string targetFileName = folderPath + "/" + (Directory.GetFiles(folderPath).Length + 1) + ".xlsx";
                 string sourceFileName = Directory.GetFiles(pathes.TempDownload)[0];
 
                 //Debug.Log("File moved");
@@ -106,7 +107,6 @@ namespace InApp
 
         public void HandleUrls()
         {
-            IWebDriver driver = null;
             try
             {
                 state = new WorkerState
@@ -192,6 +192,7 @@ namespace InApp
         {
             thread?.Abort();
             watcherThread?.Abort();
+            driver?.Quit();
         }
 
         private byte[] Download(string url)
