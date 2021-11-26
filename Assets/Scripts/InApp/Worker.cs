@@ -125,44 +125,58 @@ namespace InApp
 
                     string url = urls[i - 1];
 
-                    // Export url
-                    // https://spb.cian.ru/export/xls/offers/?deal_type=sale&district%5B0%5D=747&engine_version=2&object_type%5B0%5D=1&offer_type=flat&room7=1&room9=1&totime=864000
-                    //url = url.Replace("cat.php", "export/xls/offers");
-
-                    if (i % CHILL_URLS_COUNT == 0 && i > 0)
+                    try
                     {
-                        state.type = WorkerState.Type.Awaiting;
-                        state.awaitTimeLeft = CHILL_DELAY;
-                        while (state.awaitTimeLeft > 0)
+                        // Export url
+                        // https://spb.cian.ru/export/xls/offers/?deal_type=sale&district%5B0%5D=747&engine_version=2&object_type%5B0%5D=1&offer_type=flat&room7=1&room9=1&totime=864000
+                        //url = url.Replace("cat.php", "export/xls/offers");
+
+                        if (i % CHILL_URLS_COUNT == 0 && i > 0)
                         {
-                            Thread.Sleep(1000);
-                            state.awaitTimeLeft--;
+                            state.type = WorkerState.Type.Awaiting;
+                            state.awaitTimeLeft = CHILL_DELAY;
+                            while (state.awaitTimeLeft > 0)
+                            {
+                                Thread.Sleep(1000);
+                                state.awaitTimeLeft--;
+                            }
+                        }
+
+                        state.type = WorkerState.Type.Downloading;
+
+                        state.awaitTimeLeft = DELAY_SECONDS;
+
+                        driver.Navigate().GoToUrl(url);
+
+                        HtmlDocument doc = new HtmlDocument();
+                        doc.LoadHtml(driver.PageSource);
+
+                        var elemets = driver.FindElements(By.ClassName("_93444fe79c--light--366j7"));
+                        IWebElement button = null;
+
+                        while (button == null)
+                        {
+                            button = elemets.FirstOrDefault(e => e.Text == "Сохранить файл в Excel");
+                            if (button == null)
+                            {
+                                Thread.Sleep(1000);
+                            }
+                        }
+
+                        button.Click();
+                    }
+                    catch (Exception err)
+                    {
+                        if (err is WebDriverTimeoutException || err is TimeoutException)
+                        {
+                            Debug.LogError($"[URL HANDLE ERROR] Work will continue. '{url}' threw exception: " + err);
+                        }
+                        else
+                        {
+                            Debug.LogError($"[URL HANDLE ERROR] Work will be stopped. '{url}' threw exception: " + err);
+                            throw;
                         }
                     }
-
-                    state.type = WorkerState.Type.Downloading;
-
-                    state.awaitTimeLeft = DELAY_SECONDS;
-
-                    driver.Navigate().GoToUrl(url);
-
-                    HtmlDocument doc = new HtmlDocument();
-                    doc.LoadHtml(driver.PageSource);
-
-                    var elemets = driver.FindElements(By.ClassName("_93444fe79c--light--366j7"));
-                    IWebElement button = null;
-
-                    while (button == null)
-                    {
-                        button = elemets.FirstOrDefault(e => e.Text == "Сохранить файл в Excel");
-                        if (button == null)
-                        {
-                            Thread.Sleep(1000);
-                        }
-                    }
-
-                    //Debug.Log("Click download");
-                    button.Click();
                 }
 
                 Thread.Sleep(4000);
@@ -183,16 +197,16 @@ namespace InApp
                 state.finishTime = DateTime.Now;
                 if (driver != null)
                 {
-                    driver.Close();
+                    driver.Quit();
                 }
             }
         }
 
         public void Dispose()
         {
+            driver?.Quit();
             thread?.Abort();
             watcherThread?.Abort();
-            driver?.Quit();
         }
 
         private byte[] Download(string url)
