@@ -151,7 +151,7 @@ namespace InApp
                         HtmlDocument doc = new HtmlDocument();
                         doc.LoadHtml(driver.PageSource);
 
-                        var elemets = driver.FindElements(By.ClassName("_93444fe79c--light--366j7"));
+                        var elemets = driver.FindElements(By.ClassName("_93444fe79c--main--PpO9F"));
                         IWebElement button = null;
 
                         while (button == null)
