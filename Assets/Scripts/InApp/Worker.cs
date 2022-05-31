@@ -1,7 +1,7 @@
 using HtmlAgilityPack;
-//using OpenQA.Selenium.Edge;
 using Microsoft.Edge.SeleniumTools;
 using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,8 +21,6 @@ namespace InApp
 
         private Thread thread, watcherThread;
         private string folderPath;
-        private HttpClient client;
-        private FileSystemWatcher watcher;
         private IWebDriver driver;
 
         private readonly Pathes pathes;
@@ -58,12 +56,10 @@ namespace InApp
                     BypassProxyOnLocal = false
                 };
             }
-            client = new HttpClient(handler);
-
             thread = new Thread(new ThreadStart(HandleUrls));
             thread.Start();
 
-            UnityEngine.Debug.Log(pathes.TempDownload);
+            Debug.Log(pathes.TempDownload);
 
             watcherThread = new Thread(new ThreadStart(WatchDownloads));
             watcherThread.Start();
@@ -86,8 +82,6 @@ namespace InApp
 
                 string targetFileName = folderPath + "/" + (Directory.GetFiles(folderPath).Length + 1) + ".xlsx";
                 string sourceFileName = Directory.GetFiles(pathes.TempDownload)[0];
-
-                //Debug.Log("File moved");
 
                 File.Move(sourceFileName, targetFileName);
 
@@ -209,27 +203,14 @@ namespace InApp
             watcherThread?.Abort();
         }
 
-        private byte[] Download(string url)
-        {
-            using HttpResponseMessage resp = client.GetAsync(url).Result;
-            if (resp.IsSuccessStatusCode)
-            {
-                return resp.Content.ReadAsByteArrayAsync().Result;
-            }
-            else
-            {
-                throw new Exception($"Webpage ({url}) can't be downloaded. Response code is {resp.StatusCode}");
-            }
-        }
-
         private IWebDriver GetDriver()
         {
-            EdgeDriverService service = EdgeDriverService.CreateChromiumService(pathes.DataPath + "/StreamingAssets");
+            var service = ChromeDriverService.CreateDefaultService(pathes.DataPath + "/StreamingAssets", "yandexdriver.exe");
             service.HideCommandPromptWindow = true;
 
-            var options = new EdgeOptions();
+            var options = new ChromeOptions();
 
-            options.UseChromium = true;
+            //options.UseChromium = true;
             options.AddArgument("--disable-blink-features=AutomationControlled");
             options.AddArgument("--headless");
 
@@ -242,7 +223,7 @@ namespace InApp
 
 
 
-            var driver = new EdgeDriver(service, options);
+            var driver = new ChromeDriver(service, options);
 
             driver.Manage().Window.Maximize();
 
@@ -265,8 +246,6 @@ Object.defineProperty(navigator, 'languages', {
 ");
             string startUrl = "https://spb.cian.ru";
             driver.Navigate().GoToUrl(startUrl);
-
-            //Thread.Sleep(5000);
 
             return driver;
         }
