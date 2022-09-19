@@ -2,6 +2,7 @@ using HtmlAgilityPack;
 using Microsoft.Edge.SeleniumTools;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Interactions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -151,9 +152,14 @@ namespace InApp
                         while (button == null)
                         {
                             button = elemets.FirstOrDefault(e => e.Text == "Сохранить файл в Excel");
+
                             if (button == null)
                             {
                                 Thread.Sleep(1000);
+                            }
+                            else
+                            {
+                                new Actions(driver).MoveToElement(button).Click(button).Perform();
                             }
                         }
 
@@ -192,6 +198,7 @@ namespace InApp
                 if (driver != null)
                 {
                     driver.Quit();
+                    driver.Close();
                 }
             }
         }
@@ -212,7 +219,7 @@ namespace InApp
 
             //options.UseChromium = true;
             options.AddArgument("--disable-blink-features=AutomationControlled");
-            options.AddArgument("--headless");
+            //options.AddArgument("--headless");
 
             options.AddUserProfilePreference("download.default_directory", pathes.TempDownload);
             options.AddUserProfilePreference("download.prompt_for_download", false);
