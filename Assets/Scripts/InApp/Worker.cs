@@ -1,12 +1,10 @@
 using HtmlAgilityPack;
-using Microsoft.Edge.SeleniumTools;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Interactions;
+using OpenQA.Selenium.Support.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -49,6 +47,7 @@ namespace InApp
             urls = urlsCreator.Create();
 
             var handler = new HttpClientHandler();
+            Debug.Log("Disable proxy? " + File.Exists(pathes.Data + "/noproxy.txt"));
             if (File.Exists(pathes.Data + "/noproxy.txt") == false)
             {
                 handler.Proxy = new WebProxy
@@ -112,6 +111,7 @@ namespace InApp
                 };
 
                 driver = GetDriver();
+                Debug.Log("Driver started");
                 System.Random rnd = new System.Random();
 
                 for (int i = 1; i <= urls.Count; i++)
@@ -141,29 +141,14 @@ namespace InApp
 
                         state.awaitTimeLeft = DELAY_SECONDS;
 
-                        driver.Navigate().GoToUrl(url);
+                        string downloadUrl = url.Replace("cat.php", "export/xls/offers/");
+
+                        driver.Navigate().GoToUrl(downloadUrl);
+
+                        Thread.Sleep(5000);
 
                         HtmlDocument doc = new HtmlDocument();
                         doc.LoadHtml(driver.PageSource);
-
-                        var elemets = driver.FindElements(By.ClassName("_93444fe79c--main--PpO9F"));
-                        IWebElement button = null;
-
-                        while (button == null)
-                        {
-                            button = elemets.FirstOrDefault(e => e.Text == "Сохранить файл в Excel");
-
-                            if (button == null)
-                            {
-                                Thread.Sleep(1000);
-                            }
-                            else
-                            {
-                                new Actions(driver).MoveToElement(button).Click(button).Perform();
-                            }
-                        }
-
-                        button.Click();
                     }
                     catch (Exception err)
                     {
@@ -197,7 +182,6 @@ namespace InApp
                 state.finishTime = DateTime.Now;
                 if (driver != null)
                 {
-                    driver.Quit();
                     driver.Close();
                 }
             }
@@ -205,7 +189,7 @@ namespace InApp
 
         public void Dispose()
         {
-            driver?.Quit();
+            driver?.Close();
             thread?.Abort();
             watcherThread?.Abort();
         }
@@ -255,6 +239,16 @@ Object.defineProperty(navigator, 'languages', {
             driver.Navigate().GoToUrl(startUrl);
 
             return driver;
+        }
+
+        private IWebElement FindElement(IWebDriver driver, By by, int timeoutInSeconds)
+        {
+            if (timeoutInSeconds > 0)
+            {
+                var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutInSeconds));
+                return wait.Until(drv => drv.FindElement(by));
+            }
+            return driver.FindElement(by);
         }
     }
 
